@@ -1,14 +1,22 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:contact_app/features/view/screens/new_user_screen.dart';
 import 'package:flutter/material.dart';
+
+
 
 class ContainerWidget extends StatelessWidget {
   const ContainerWidget({
     super.key,
+    required this.id,
     required this.personName,
     required this.personNumber,
+    required this.onRefresh,
   });
 
+  final String id;
   final String personName;
   final String personNumber;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +37,20 @@ class ContainerWidget extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(15),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => NewUserScreen(
+                  contactId: id,
+                  existingName: personName,
+                  existingPhone: personNumber,
+                ),
+              ),
+            ).then((value) {
+              onRefresh();
+            });
+          },
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -77,7 +98,13 @@ class ContainerWidget extends StatelessWidget {
                   hoverColor: Colors.red.withOpacity(0.1),
                   splashColor: Colors.red.withOpacity(0.2),
                   highlightColor: Colors.red.withOpacity(0.1),
-                  onPressed: () {},
+                  onPressed: () async {
+                    await FirebaseFirestore.instance
+                        .collection('contacts')
+                        .doc(id)
+                        .delete();
+                    onRefresh();
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.call_outlined),

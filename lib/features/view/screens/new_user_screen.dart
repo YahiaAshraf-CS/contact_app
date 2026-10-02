@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class NewUserScreen extends StatefulWidget {
@@ -93,11 +94,50 @@ class _NewUserScreenState extends State<NewUserScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
+                  disabledMouseCursor: SystemMouseCursors.click,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
+                    side: const BorderSide(
+                      color: Color.fromARGB(255, 240, 241, 242),
+                    ),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () async {
+                  final name = nameController.text.trim();
+                  final phone = phoneController.text.trim();
+
+                  if (name.isEmpty || phone.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please fill in all fields.'),
+                      ),
+                    );
+                    return;
+                  }
+
+                  try {
+                    if (isEditing) {
+                      await FirebaseFirestore.instance
+                          .collection('contacts')
+                          .doc(widget.contactId)
+                          .update({'name': name, 'phone': phone});
+                    } else {
+                      await FirebaseFirestore.instance
+                          .collection('contacts')
+                          .doc()
+                          .set({'name': name, 'phone': phone});
+                    }
+
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
+                  }
+                },
                 child: Text(
                   isEditing ? 'Save Changes' : 'Add Contact',
                   style: const TextStyle(
