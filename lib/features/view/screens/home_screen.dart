@@ -1,16 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contact_app/core/routes/app_routes.dart';
 import 'package:contact_app/features/view/widgets/container_widget.dart';
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatefulWidget {
-  // FIXED: Changed "new" to "HomeScreen"
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,27 +21,60 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-        
             Expanded(
-              child: ListView.separated(
-               
-                itemBuilder: (context, index) {
-                  return const ContainerWidget(
-                    personName: "yehia ashraf",
-                    personNumber: "01001621232",
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('contacts')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.blueAccent,
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return const Center(
+                      child: Text(
+                        'Something went wrong',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No contacts found.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  var docs = snapshot.data!.docs;
+
+                  return ListView.separated(
+                    itemBuilder: (context, index) {
+                      var doc = docs[index];
+                      return ContainerWidget(
+                        id: doc.id,
+                        personName: doc['name'] ?? '',
+                        personNumber: doc['phone'] ?? '',
+                        onRefresh: () {},
+                      );
+                    },
+                    separatorBuilder: (context, index) {
+                      return const SizedBox(height: 10);
+                    },
+                    itemCount: docs.length,
                   );
                 },
-                separatorBuilder: (context, index) {
-                  return const SizedBox(height: 10);
-                },
-                itemCount: 9,
-               
               ),
             ),
-         ],
-           
+          ],
         ),
-        
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -63,7 +91,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-        
     );
   }
 }
